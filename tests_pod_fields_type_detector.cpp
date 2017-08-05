@@ -12,7 +12,10 @@ struct A
 
 void test()
 {
-	static_assert(pod_fields_type_detector<A>::is_real_types(std::tuple<int, char, float>{}), "is_real_types");
-	static_assert(!pod_fields_type_detector<A>::is_real_types(std::tuple<char, int, double>{}), "is_real_types");
+	using types_tuple = std::tuple<double, float, A, long, int, char, short>;
+	constexpr auto types_indexes = pod_fields_type_detector<A, types_tuple>::detect();
+	static_assert(types_indexes[0] == 4, "int");
+	static_assert(types_indexes[1] == 5, "char");
+	static_assert(types_indexes[2] == 1, "float");
 }
 }

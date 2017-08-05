@@ -5,42 +5,59 @@
 
 #include "pod_fields_count_detector.h"
 
-template<typename PodType>
+template<typename PodType, typename TypesTuple>
 struct pod_fields_type_detector
 {
 	static constexpr size_t fields_count = pod_fields_count_detector<PodType>::detect();
 
-	template<size_t I, typename T>
+	static constexpr auto detect() noexcept
+	{
+		return constexpr_array<size_t, fields_count, types_indexes_filler>();
+	}
+
+private:
+	template<size_t FieldIndex>
 	struct type_detector
 	{
-		bool* values;
-		constexpr type_detector(bool* b) noexcept : values(b) {}
+		static constexpr size_t not_found_index = static_cast<size_t>(-1);
+
+		size_t* values;
+		constexpr type_detector(size_t* v) noexcept : values(v) {}
 
 		template<typename RealType>
 		constexpr operator RealType() const noexcept
 		{
-			static_assert(I < fields_count, "incorrect index");
-			values[I] = std::is_same<RealType, T>::value;
+			static_assert(FieldIndex < fields_count, "incorrect index");
+			constexpr size_t type_index = get_type_index<RealType>(std::make_index_sequence<std::tuple_size<TypesTuple>::value>{});
+			static_assert(type_index != not_found_index, "type index not found");
+			values[FieldIndex] = type_index;
 			return {};
+		}
+
+		template<typename T, size_t... Is>
+		static constexpr size_t get_type_index(std::index_sequence<Is...>) noexcept
+		{
+			size_t result = not_found_index;
+			std::initializer_list<int>{((result = std::is_same<T, std::tuple_element_t<Is, TypesTuple>>::value ? Is : result), 0)...};
+			// TODO: need to process a case with duplicated types in tuple
+			return result;
 		}
 	};
 
-	template<typename... Ts>
-	static constexpr bool is_real_types(std::tuple<Ts...>) noexcept
+	struct types_indexes_filler
 	{
-		static_assert(sizeof...(Ts) == fields_count, "incorrect tuple size");
-		return is_real_types_impl(std::make_index_sequence<fields_count>{}, std::tuple<Ts...>{});
-	}
+		template<typename T>
+		static constexpr void fill(T* values, size_t size) noexcept
+		{
+			static_cast<void>(size);
+			fill_impl(values, std::make_index_sequence<fields_count>{});
+		}
 
-	template<size_t... Is, typename... Ts>
-	static constexpr bool is_real_types_impl(std::index_sequence<Is...>, std::tuple<Ts...>) noexcept
-	{
-		static_assert(sizeof...(Ts) == fields_count, "incorrect tuple size");
-		bool indicators[fields_count]{};
-		static_cast<void>(PodType{ type_detector<Is, Ts>{indicators}... });
-		bool result = true;
-		for (size_t i = 0; i < fields_count; ++i)
-			result &= indicators[i];
-		return result;
-	}
+		template<typename T, size_t... Is>
+		static constexpr void fill_impl(T* values, std::index_sequence<Is...>) noexcept
+		{
+			static_assert(sizeof...(Is) <= fields_count, "incorrect tuple size");
+			static_cast<void>(PodType{ type_detector<Is>{values}... });
+		}
+	};
 };
