@@ -1,10 +1,6 @@
 #pragma once
 
-#include <array>
-#include <initializer_list>
-
 #include "common.h"
-#include "n_tuples_of_m_set.h"
 #include "pod_fields_count_detector.h"
 #include "pod_fields_type_detector.h"
 

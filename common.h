@@ -17,7 +17,7 @@ struct constexpr_array
 	template<typename... Args>
 	constexpr constexpr_array(Args&&... args) noexcept : values()
 	{
-		ConstexprFiller::fill<T>(values, N, std::forward<Args>(args)...);
+		ConstexprFiller::template fill<T>(values, N, std::forward<Args>(args)...);
 	}
 	constexpr T operator[](size_t i) const noexcept { return values[i]; }
 	T values[N];
