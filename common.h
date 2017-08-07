@@ -20,6 +20,7 @@ struct constexpr_array
 		ConstexprFiller::template fill<T>(values, N, std::forward<Args>(args)...);
 	}
 	constexpr T operator[](size_t i) const noexcept { return values[i]; }
+	constexpr size_t size() const noexcept { return N; }
 	T values[N];
 };
 

@@ -8,7 +8,7 @@ template<typename PodType, typename TypesTuple>
 struct pod_fields_scanner
 {
 	static constexpr auto fields_count = pod_fields_count_detector<PodType>::detect();
-	static constexpr auto fields_type_indexes = pod_fields_type_detector<PodType, TypesTuple>::detect();
+	static constexpr auto fields_type_indexes = trivially_constructible_pod_fields_type_detector<PodType, TypesTuple>::detect();
 
 	static constexpr auto detect_fields_types()
 	{
