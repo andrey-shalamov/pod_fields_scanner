@@ -124,7 +124,41 @@ struct not_trivially_constructible_pod_fields_type_accurate_detector
 		return constexpr_array<size_t, fields_count, types_indexes_filler>();
 	}
 
+	static constexpr auto sort_types_by_size() noexcept
+	{
+		return constexpr_array<size_t, std::tuple_size<TypesTuple>::value, types_indexes_sorter>();
+	}
 private:
+	struct types_indexes_sorter
+	{
+		template<typename T>
+		static constexpr void fill(T* values, size_t size) noexcept
+		{
+			fill_impl(values, size, std::make_index_sequence<std::tuple_size<TypesTuple>::value>{});
+		}
+
+		template<typename T, size_t... Is>
+		static constexpr void fill_impl(T* values, size_t size, std::index_sequence<Is...>) noexcept
+		{
+			static_assert(sizeof...(Is) == std::tuple_size<TypesTuple>::value, "incorrect tuple size");
+			std::pair<size_t, size_t> type_sizes[]{ {Is, sizeof(std::tuple_element_t<Is, TypesTuple>) }... };
+			for (int i = 1; i < static_cast<int>(size); ++i)
+			{
+				const auto x = type_sizes[i];
+				int j = i - 1;
+				while (j >= 0 && x.second < type_sizes[j].second)
+				{
+					type_sizes[j + 1].first = type_sizes[j].first;
+					type_sizes[j + 1].second = type_sizes[j].second;
+					--j;
+				}
+				type_sizes[j + 1].first = x.first;
+				type_sizes[j + 1].second = x.second;
+			}
+			static_cast<void>(std::initializer_list<int>{((values[Is] = type_sizes[Is].first), 0)...});
+		}
+	};
+
 	struct types_indexes_filler
 	{
 		template<typename T>
@@ -143,12 +177,6 @@ private:
 			static_assert(sizeof...(Is) == fields_count, "incorrect tuple size");
 			constexpr auto inaccurate_indexes = not_trivially_constructible_pod_fields_type_inaccurate_detector<PodType, TypesTuple>::detect();
 			static_cast<void>(std::initializer_list<int>{(( fix_index<Is, inaccurate_indexes[Is]>(values, is_inaccurate<inaccurate_indexes[Is]>{})), 0)...});
-		}
-
-		template<size_t I, size_t I2>
-		static constexpr size_t fixxx()
-		{
-			return I2;
 		}
 
 		template<size_t FieldIndex, size_t AccurateIndex, typename T>

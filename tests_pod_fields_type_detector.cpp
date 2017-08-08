@@ -32,13 +32,12 @@ void test2()
 
 void test3()
 {
-	using types_tuple = std::tuple<long, char, short, int, float, double, A>;
-	constexpr auto types_indexes = not_trivially_constructible_pod_fields_type_accurate_detector<A, types_tuple>::detect();
-	static_assert(types_indexes[0] == 3, "int");
-	static_assert(types_indexes[1] == 1, "char");
-	static_assert(types_indexes[2] == 4, "float");
-	// I have no idea why, but the next code compiles successfully
-	// A{ as_type<double>{}, as_type<double>{}, as_type<double>{} };
+	using types_tuple = std::tuple<int,float,char, A>;
+	constexpr auto types_indexes = not_trivially_constructible_pod_fields_type_accurate_detector<A, types_tuple>::sort_types_by_size();
+	static_assert(types_indexes[0] == 2, "int");
+	static_assert(types_indexes[1] == 0, "char");
+	static_assert(types_indexes[2] == 1, "float");
+	static_assert(types_indexes[3] == 3, "float");
 }
 
 }
