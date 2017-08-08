@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <cstdint>
 
 namespace
 {
@@ -17,7 +18,7 @@ struct S
 
 void test_s1()
 {
-	using types_tuple_t = std::tuple<char, short, int, long, float, double>;
+	using types_tuple_t = std::tuple<char, int16_t, int32_t, int64_t, float, double>;
 	using pod_fields_scanner_t = pod_fields_scanner<S, types_tuple_t>;
 	static_assert(pod_fields_scanner_t::fields_count == 3, "fields_count");
 	constexpr auto types = pod_fields_scanner_t::detect_fields_types();
@@ -40,7 +41,7 @@ struct S2
 
 void test_s2()
 {
-	using types_tuple_t = std::tuple<char, short, int, long, float, double>;
+	using types_tuple_t = std::tuple<char, int16_t, int32_t, int64_t, float, double>;
 	using pod_fields_scanner_t = pod_fields_scanner<S2, types_tuple_t>;
 	static_assert(pod_fields_scanner_t::fields_count == 10, "fields_count");
 	constexpr auto types = pod_fields_scanner_t::detect_fields_types();
@@ -78,7 +79,7 @@ struct S4
 
 void test_s4()
 {
-	using types_tuple_t = std::tuple<int, int[2]>;
+	using types_tuple_t = std::tuple<int/*, int[2]*/>;
 	using pod_fields_scanner_t = pod_fields_scanner<S4, types_tuple_t>;
 	static_assert(pod_fields_scanner_t::fields_count == 2, "fields_count");
 	constexpr auto types = pod_fields_scanner_t::detect_fields_types();
@@ -92,13 +93,11 @@ struct S5
 
 void test_s5()
 {
-	//static_assert(std::is_trivially_default_constructible_v<std::string>, "!");
-	//static_assert(std::is_constructible_v<S2, std::string>, "!");
-	/*using types_tuple_t = std::tuple<int, std::string>;
+	using types_tuple_t = std::tuple<int, std::string>;
 	using pod_fields_scanner_t = pod_fields_scanner<S5, types_tuple_t>;
 	static_assert(pod_fields_scanner_t::fields_count == 1, "fields_count");
-	constexpr auto types = pod_fields_scanner_t::detect_fields_types();*/
-	//static_assert(std::is_same<decltype(types), const std::tuple<std::string>>::value, "detect_fields_types");
+	constexpr auto types = pod_fields_scanner_t::detect_fields_types();
+	static_assert(std::is_same<decltype(types), const std::tuple<std::string>>::value, "detect_fields_types");
 }
 
 }

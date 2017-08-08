@@ -70,7 +70,6 @@ struct not_trivially_constructible_pod_fields_type_inaccurate_detector
 
 	static constexpr auto detect() noexcept
 	{
-		static_assert(std::is_pod<PodType>::value, "PodType must be a POD type.");
 		return constexpr_array<size_t, fields_count, types_indexes_filler>();
 	}
 
@@ -120,14 +119,11 @@ struct not_trivially_constructible_pod_fields_type_accurate_detector
 
 	static constexpr auto detect() noexcept
 	{
-		static_assert(std::is_pod<PodType>::value, "PodType must be a POD type.");
 		return constexpr_array<size_t, fields_count, types_indexes_filler>();
 	}
 
-	static constexpr auto sort_types_by_size() noexcept
-	{
-		return constexpr_array<size_t, std::tuple_size<TypesTuple>::value, types_indexes_sorter>();
-	}
+	struct types_indexes_sorter;
+	static constexpr constexpr_array<size_t, std::tuple_size<TypesTuple>::value, types_indexes_sorter> indexes_of_types_sorted_by_size {};
 private:
 	struct types_indexes_sorter
 	{
@@ -140,7 +136,6 @@ private:
 		template<typename T, size_t... Is>
 		static constexpr void fill_impl(T* values, size_t size, std::index_sequence<Is...>) noexcept
 		{
-			static_assert(sizeof...(Is) == std::tuple_size<TypesTuple>::value, "incorrect tuple size");
 			std::pair<size_t, size_t> type_sizes[]{ {Is, sizeof(std::tuple_element_t<Is, TypesTuple>) }... };
 			for (int i = 1; i < static_cast<int>(size); ++i)
 			{
@@ -176,25 +171,40 @@ private:
 		{
 			static_assert(sizeof...(Is) == fields_count, "incorrect tuple size");
 			constexpr auto inaccurate_indexes = not_trivially_constructible_pod_fields_type_inaccurate_detector<PodType, TypesTuple>::detect();
-			static_cast<void>(std::initializer_list<int>{(( fix_index<Is, inaccurate_indexes[Is]>(values, is_inaccurate<inaccurate_indexes[Is]>{})), 0)...});
+			static_cast<void>(std::initializer_list<int>{(( values[Is] = get_real_index<Is, inaccurate_indexes[Is]>(is_inaccurate<inaccurate_indexes[Is]>{})), 0)...});
 		}
 
-		template<size_t FieldIndex, size_t AccurateIndex, typename T>
-		static constexpr void fix_index(T* values, std::false_type)
+		template<size_t FieldIndex, size_t AccurateIndex>
+		static constexpr size_t get_real_index(std::false_type)
 		{
-			values[FieldIndex] = AccurateIndex;
+			return AccurateIndex;
 		}
 
-		template<size_t FieldIndex, size_t InaccurateIndex, typename T>
-		static constexpr void fix_index(T* values, std::true_type)
+		template<size_t FieldIndex, size_t InaccurateIndex>
+		static constexpr size_t get_real_index(std::true_type)
 		{
-			fix_index_impl<FieldIndex>(values, std::make_index_sequence<FieldIndex>{}, make_index_sequence_range<FieldIndex + 1, fields_count>());
+			return get_real_index_impl<FieldIndex>(
+				std::make_index_sequence<indexes_of_types_sorted_by_size.size()>{},
+				std::make_index_sequence<FieldIndex>{},
+				make_index_sequence_range<FieldIndex + 1, fields_count>()
+			);
 		}
 
-		template<size_t FieldIndex, typename T, size_t... Is1, size_t... Is2>
-		static constexpr void fix_index_impl(T* values, std::index_sequence<Is1...>, std::index_sequence<Is2...>)
+		template<size_t FieldIndex, size_t... Is0, size_t... Is1, size_t... Is2>
+		static constexpr size_t get_real_index_impl(std::index_sequence<Is0...>, std::index_sequence<Is1...>, std::index_sequence<Is2...>)
 		{
-			static_cast<void>(PodType{ as_any_type<Is1>{}..., trivially_constructible_pod_field_type_detector<PodType, TypesTuple, FieldIndex>{values}, as_any_type<Is2>{}... });
+			return get_real_index_impl<FieldIndex>(
+				std::make_index_sequence<sizeof...(Is0) - 1>{},
+				std::make_index_sequence<FieldIndex>{},
+				make_index_sequence_range<FieldIndex + 1, fields_count>()
+			);
+		}
+
+		template<size_t FieldIndex, size_t I0, size_t... Is0, size_t... Is1, size_t... Is2>
+		static constexpr std::enable_if_t < std::is_same < PodType, decltype(PodType{ as_any_type<Is1>{}..., std::get<indexes_of_types_sorted_by_size[sizeof...(Is0)]>(TypesTuple{}), as_any_type<Is2>{}... }) > ::value, size_t >
+			get_real_index_impl(std::index_sequence<I0, Is0...>,  std::index_sequence<Is1...>, std::index_sequence<Is2...>)
+		{
+			return indexes_of_types_sorted_by_size[sizeof...(Is0)];
 		}
 	};
 };
