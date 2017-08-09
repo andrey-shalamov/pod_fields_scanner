@@ -13,7 +13,7 @@ struct A
 
 void test()
 {
-	using types_tuple = std::tuple<double, float, A, long, int, char, short>;
+	using types_tuple = type_list<double, float, A, long, int, char, short>;
 	constexpr auto types_indexes = trivially_constructible_pod_fields_type_detector<A, types_tuple>::detect();
 	static_assert(types_indexes[0] == 4, "int");
 	static_assert(types_indexes[1] == 5, "char");
@@ -22,7 +22,7 @@ void test()
 
 void test2()
 {
-	using types_tuple = std::tuple<long, double, A>;
+	using types_tuple = type_list<long, double, A>;
 	constexpr auto types_indexes = not_trivially_constructible_pod_fields_type_inaccurate_detector<A, types_tuple>::detect();
 	static_assert(types_indexes[0] == 1, "int");
 	static_assert(types_indexes[1] == 1, "char");
@@ -33,7 +33,7 @@ void test2()
 
 void test3()
 {
-	using types_tuple = std::tuple<int,float,char, A>;
+	using types_tuple = type_list<int,float,char, A>;
 	constexpr auto types_indexes = not_trivially_constructible_pod_fields_type_accurate_detector<A, types_tuple>::indexes_of_types_sorted_by_size;
 	static_assert(types_indexes[0] == 2, "int");
 	static_assert(types_indexes[1] == 0, "char");
@@ -43,7 +43,7 @@ void test3()
 
 void test4()
 {
-	using types_tuple = std::tuple<double, float, A, long, int, char, short>;
+	using types_tuple = type_list<double, float, A, long, int, char, short>;
 	constexpr auto types_indexes = not_trivially_constructible_pod_fields_type_accurate_detector<A, types_tuple>::detect();
 	static_assert(types_indexes[0] == 4, "int");
 	static_assert(types_indexes[1] == 5, "char");
@@ -60,7 +60,7 @@ struct S
 void test_s1()
 {
 	static_assert(sizeof(int) == sizeof(long), "!");
-	using types_tuple_t = std::tuple<int8_t, int16_t, int32_t, int64_t, float, double>;
+	using types_tuple_t = type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 	using pod_fields_scanner_t = not_trivially_constructible_pod_fields_type_accurate_detector<S, types_tuple_t>;
 	static_assert(pod_fields_scanner_t::fields_count == 3, "fields_count");
 	constexpr auto types_indexes = pod_fields_scanner_t::detect();

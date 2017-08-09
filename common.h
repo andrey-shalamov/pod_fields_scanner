@@ -67,3 +67,32 @@ struct as_type
 
 template<typename... Ts>
 struct as_any_type_of : as_type<Ts...> {};
+
+//
+
+template<typename... Ts>
+struct type_list
+{
+	static constexpr size_t size = sizeof...(Ts);
+};
+
+template<size_t I, typename T>
+struct type_list_element;
+
+template<typename T, typename... Ts>
+struct type_list_element<0, type_list<T, Ts...>>
+{
+	using type = T;
+	static constexpr T get(); // Undefined
+};
+
+template<size_t I, typename T, typename... Ts>
+struct type_list_element<I, type_list<T, Ts...>>
+{
+	using type = typename type_list_element<I - 1, type_list<Ts...>>::type;
+	static constexpr type get(); // Undefined
+};
+
+template<size_t I, typename TypeList>
+using type_list_element_t = typename type_list_element<I, TypeList>::type;
+
